@@ -2,7 +2,7 @@
 # OPENMP
 
 ### Сравнение время работы последовательной и параллельной функции подсчета инклюзивной префиксной суммы для заданного массива типа float.
-В качестве параллельного алгоритма использоваля алгоритм **[Hillis and Steele](https://commons.wikimedia.org/wiki/File:Hillis-Steele_Prefix_Sum.svg?uselang=ru)**
+В качестве параллельного алгоритма использоваля алгоритм **[Hillis and Steele](https://ru.wikipedia.org/wiki/%D0%9F%D1%80%D0%B5%D1%84%D0%B8%D0%BA%D1%81%D0%BD%D0%B0%D1%8F_%D1%81%D1%83%D0%BC%D0%BC%D0%B0)**
 ![image](https://user-images.githubusercontent.com/58637038/113473144-5fd56280-9470-11eb-99c1-571d7e0c944c.png "Hillis and Steele algorithm")
 
 ### Аргументы командной строки:  
