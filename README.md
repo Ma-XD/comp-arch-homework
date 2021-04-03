@@ -1,1 +1,1 @@
-# Copm-arch
+# comp-arch-homework
