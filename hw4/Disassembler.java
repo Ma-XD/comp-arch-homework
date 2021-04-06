@@ -15,10 +15,26 @@ public class Disassembler {
     private static int sectionHeaderEntrySize;
     private static int sectionHeaderStringTableOffset;
 
+    private static void readFile(BufferedReader reader) throws IOException {
+        inputData = new ArrayList<>();
+        int read;
+        while (true) {
+            read = reader.read();
+            if (read < 0) {
+                break;
+            }
+            inputData.add(read);
+        }
+        StringBuilder magicNumber = getLine(0);
+        if (!magicNumber.toString().equals(ELF)) {
+            throw new FileNotFoundException("It is not ELF-file");
+        }
+    }
 
     public  static void main(String[] args) throws IOException {
         if (args.length < 1) {
-            throw new IllegalArgumentException("You should run this file with args " +
+            throw new IllegalArgumentException(
+                    "You should run this file with args " +
                     "<input_filename> " +
                     "[<output_filename>]\n"
             );
@@ -34,11 +50,12 @@ public class Disassembler {
         } catch (IOException e) {
             throw new FileNotFoundException("Cannot open file \"" + inputFilename + "\"");
         }
-        StringBuilder code = readFile(reader);
+        readFile(reader);
         reader.close();
+        StringBuilder code = getText();
         String[] binaryCommands = getBinaryCommands(code);
         ElfSymbol[] elfSymbols = getSymbolTable();
-        int textAddress = getValue(getLineWithSize(headerTextOffset + 12, 4));
+        int virtualAddress = getValue(getLineOfSize(24, 4));
         BufferedWriter writer;
         if (args.length == 2) {
             String outputFilename = args[1];
@@ -52,10 +69,13 @@ public class Disassembler {
         }
         writer.write(
                 "Symbol Table:\n" +
-                        "\t " + "Value" +
-                        "\t\t" + "Size" +
-                        "\t" + "Index" +
-                        "\t  " + "Name" + "\n"
+                        "\t  " + "Value" +
+                        "\t\t\t\t" + "Size" +
+                        "\t\t" + "Type" +
+                        "\t\t" + "Bind" +
+                        "\t\t" + "Vis" +
+                        "\t\t\t" + "Index" +
+                        "\t\t" + "Name" + "\n"
         );
         for (ElfSymbol elfSymbol : elfSymbols) {
             writer.write(elfSymbol.toString() + "\n");
@@ -63,28 +83,15 @@ public class Disassembler {
         writer.write("\nCode:\n");
         for (int i = 0; i < binaryCommands.length; i++) {
             writer.write(
-                    String.format("%08x", i * 4 + textAddress) +
-                            ":" + getMarks(elfSymbols, i * 4, binaryCommands[i]) +
+                    String.format("%08x", i * 4 + virtualAddress) +
+                            ":" + getMark(elfSymbols, i * 4 + virtualAddress, binaryCommands[i]) +
                             "\t" + toStringCommand(binaryCommands[i]) + "\n"
             );
         }
         writer.close();
     }
 
-    private static StringBuilder readFile(BufferedReader reader) throws IOException {
-        inputData = new ArrayList<>();
-        int read;
-        while (true) {
-            read = reader.read();
-            if (read < 0) {
-                break;
-            }
-            inputData.add(read);
-        }
-        StringBuilder magicNumber = getLine(0);
-        if (!magicNumber.toString().equals(ELF)) {
-            throw new FileNotFoundException("It is not ELF-file");
-        }
+    private static StringBuilder getText() {
         sectionHeaderOffset = getValue(getLine(32));
         sectionHeaderEntrySize = getValue(getLine(46));
         int sectionHeaderNumber = getValue(getLine(50));
@@ -93,7 +100,7 @@ public class Disassembler {
         headerTextOffset = getHeader(TEXT, 6);
         int textOffset = getValue(getLine(headerTextOffset + 16));
         int textSize = getValue(getLine(headerTextOffset + 20));
-        return getLineWithSize(textOffset, textSize);
+        return getLineOfSize(textOffset, textSize);
     }
 
     private static int getHeader(String equal, int size) {
@@ -101,7 +108,7 @@ public class Disassembler {
         String required;
         while (true) {
             int name = getValue(getLine(header));
-            required = getLineWithSize(sectionHeaderStringTableOffset + name, size).toString();
+            required = getLineOfSize(sectionHeaderStringTableOffset + name, size).toString();
             if (required.equals(equal)) {
                 break;
             }
@@ -120,7 +127,7 @@ public class Disassembler {
         return line;
     }
 
-    private static StringBuilder getLineWithSize(int start, int size) {
+    private static StringBuilder getLineOfSize(int start, int size) {
         StringBuilder line = new StringBuilder();
         for (int i = start; i < start + size; i++) {
             line.append(Character.toChars(inputData.get(i)));
@@ -134,12 +141,7 @@ public class Disassembler {
         }
         StringBuilder result = new StringBuilder();
         for (int i = sb.length() - 1; i >= 0; i--) {
-            result.append(String.format(
-                    "%02x",
-                    Integer.parseInt(
-                            Integer.toHexString(sb.charAt(i)),
-                            16)
-            ));
+            result.append(String.format("%02x", (int) sb.charAt(i)));
         }
         return Integer.parseInt(result.toString(), 16);
     }
@@ -176,16 +178,19 @@ public class Disassembler {
         int Offset = getValue(getLine(headerSymbolTable + 16));
         int size = getValue(getLine(headerSymbolTable + 20));
         int EntrySize = getValue(getLine(headerSymbolTable + 36));
-        getLineWithSize(Offset, size);
+        getLineOfSize(Offset, size);
         int StringTableOffset = getStringTableOffset();
         ElfSymbol[] result = new ElfSymbol[size / EntrySize];
         for (int i = 0; i < result.length; i++) {
             int shift = i * EntrySize + Offset;
-            int offset = StringTableOffset + getValue(getLineWithSize(shift, 4));
+            int offset = StringTableOffset + getValue(getLineOfSize(shift, 4));
             ElfSymbol temp = new ElfSymbol();
             temp.setNumber(i);
             temp.setName(getLine(offset).toString());
             temp.setValue(shift);
+            temp.setType(shift);
+            temp.setBind(shift);
+            temp.setVis(shift);
             temp.setSize(shift);
             temp.setIndex(shift);
             result[i] = temp;
@@ -200,10 +205,13 @@ public class Disassembler {
 
     private static class ElfSymbol {
         public int number;
-        public String name;
         public int value;
         public int size;
+        public int type;
+        public int bind;
+        public int vis;
         public int index;
+        public String name;
 
         public void setNumber(int number) {
             this.number = number;
@@ -214,18 +222,96 @@ public class Disassembler {
         }
 
         public void setValue(int start) {
-            this.value = getValue(getLineWithSize(start + 4, 4));
+            this.value = getValue(getLineOfSize(start + 4, 4));
         }
 
         public void setSize(int start) {
-            this.size = getValue(getLineWithSize(start + 8, 4));
+            this.size = getValue(getLineOfSize(start + 8, 4));
+        }
+
+        public void setType(int start) {
+            this.type = getValue(getLineOfSize(start + 12, 1));
+        }
+
+        public void setBind(int start) {
+            this.bind = getValue(getLineOfSize(start + 12, 1));
+        }
+
+        public void setVis(int start) {
+            this.vis = getValue(getLineOfSize(start + 13, 1));
         }
 
         public void setIndex(int start) {
-            this.index = getValue(getLineWithSize(start + 14, 2));
+            this.index = getValue(getLineOfSize(start + 14, 2));
         }
 
-        private String getIndex() {
+        private String getStringType() {
+            switch(type) {
+                case (0):
+                    return "NOTYPE";
+                case (1):
+                    return "OBJECT";
+                case (2):
+                    return "FUNC";
+                case (3):
+                    return "SECTION";
+                case (4):
+                    return "FILE";
+                    case (5):
+                    return "COMMON";
+                case (6):
+                    return "TLS";
+                case (10):
+                    return "LOOS";
+                case (12):
+                    return "HIOS";
+                case (13):
+                    return "LOPROC";
+                case (15):
+                    return "HIPROC";
+                default:
+                    return "UNKNOWN";
+            }
+
+        }
+
+        private String getStringBind() {
+            switch(bind) {
+                case (0):
+                    return "LOCAL";
+                case (1):
+                    return "GLOBAL";
+                case (2):
+                    return "WEAK";
+                case (10):
+                    return "LOOS";
+                case (12):
+                    return "HIOS";
+                case (13):
+                    return "LOPROC";
+                case (15):
+                    return "HIPROC";
+                default:
+                    return "UNKNOWN";
+            }
+        }
+
+        private String getStringVis() {
+            switch(vis) {
+                case (0):
+                    return "DEFAULT";
+                case (1):
+                    return "INTERNAL";
+                case (2):
+                    return "HIDDEN";
+                case (3):
+                    return "PROTECTED";
+                default:
+                    return "UNKNOWN";
+            }
+        }
+
+        private String getStringIndex() {
             switch(index) {
                 case 0:
                     return "UNDEF";
@@ -248,16 +334,20 @@ public class Disassembler {
             }
         }
 
+
         public String toString() {
-            return "[  " + number + "] 0x" +
-                    value + "\t\t" +
-                    size + "\t\t" +
-                    getIndex() + "\t\t" +
+            return "[ " + number + "]" + " 0x" +
+                    String.format("%08x", value) +
+                    "  \t\t" + size + "   \t\t" +
+                    getStringType() + "\t\t" +
+                    getStringBind() + "\t\t" +
+                    getStringVis() + "\t\t" +
+                    getStringIndex() + " \t\t" +
                     name + "\t\t";
         }
     }
 
-    private static String getMarks(ElfSymbol[] elfSymbols, int commandAddress, String binaryCommand) {
+    private static String getMark(ElfSymbol[] elfSymbols, int commandAddress, String binaryCommand) {
         int  SectionTextIndex = (headerTextOffset - sectionHeaderOffset) / 40;
         for (ElfSymbol elfSymbol : elfSymbols) {
             if (SectionTextIndex == elfSymbol.index) {
