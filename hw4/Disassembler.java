@@ -162,12 +162,7 @@ public class Disassembler {
     private static String toBinaryCode(StringBuilder sb) {
         StringBuilder result = new StringBuilder();
         for (int i = sb.length() - 1; i >= 0; i--) {
-            String b = Integer.toBinaryString(
-                    Integer.parseInt(
-                            Integer.toHexString(sb.charAt(i)),
-                            16
-                    )
-            );
+            String b = Integer.toBinaryString(sb.charAt(i));
             result.append(String.format("%08d", Integer.parseInt(b)));
         }
         return result.toString();
@@ -357,7 +352,8 @@ public class Disassembler {
             }
         }
         int opcode = getFunction(binaryCommand, 25, 7);
-        if (opcode == 111 || opcode == 103 || (opcode == 99 && getFunction(binaryCommand, 17, 3) == 5) ) {
+        if ( opcode == 111 || opcode == 103 ||
+                (opcode == 99 && getFunction(binaryCommand, 17, 3) == 5) ) {
             return " <LOC_" + String.format("%08x", commandAddress) + "> ";
         }
         return "\t\t\t\t";
