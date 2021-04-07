@@ -1,12 +1,12 @@
 Symbol Table:
 	  Value				Size		Type		Bind		Vis			Index		Name
 [ 0] 0x00000000  		0   		NOTYPE		LOCAL		DEFAULT		UNDEF 				
-[ 1] 0x00000000  		0   		FILE		UNKNOWN		DEFAULT		ABS 		test2.c		
+[ 1] 0x00000000  		0   		FILE		LOCAL		DEFAULT		ABS 		test2.c		
 [ 2] 0x00000030  		0   		NOTYPE		LOCAL		DEFAULT		0002 		.LBB0_1		
 [ 3] 0x00000040  		0   		NOTYPE		LOCAL		DEFAULT		0002 		.LBB0_2		
 [ 4] 0x00000058  		0   		NOTYPE		LOCAL		DEFAULT		0002 		.LBB0_3		
 [ 5] 0x00000068  		0   		NOTYPE		LOCAL		DEFAULT		0002 		.LBB0_4		
-[ 6] 0x00000000  		124   		UNKNOWN		UNKNOWN		DEFAULT		0002 		main		
+[ 6] 0x00000000  		124   		FUNC		GLOBAL		DEFAULT		0002 		main		
 
 Code:
 00000000: <main>			addi r2, r2, -32

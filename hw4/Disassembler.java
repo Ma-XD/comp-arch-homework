@@ -199,14 +199,14 @@ public class Disassembler {
     }
 
     private static class ElfSymbol {
-        public int number;
-        public int value;
-        public int size;
-        public int type;
-        public int bind;
-        public int vis;
-        public int index;
-        public String name;
+        private int number;
+        private int value;
+        private int size;
+        private int type;
+        private int bind;
+        private int vis;
+        private int index;
+        private String name;
 
         public void setNumber(int number) {
             this.number = number;
@@ -225,11 +225,11 @@ public class Disassembler {
         }
 
         public void setType(int start) {
-            this.type = getValue(getLineOfSize(start + 12, 1));
+            this.type = getValue(getLineOfSize(start + 12, 1)) & 0b00001111;
         }
 
         public void setBind(int start) {
-            this.bind = getValue(getLineOfSize(start + 12, 1));
+            this.bind = getValue(getLineOfSize(start + 12, 1)) >> 4;
         }
 
         public void setVis(int start) {
@@ -252,7 +252,7 @@ public class Disassembler {
                     return "SECTION";
                 case (4):
                     return "FILE";
-                    case (5):
+                case (5):
                     return "COMMON";
                 case (6):
                     return "TLS";
