@@ -51,4 +51,4 @@
         00000078: <LOC_00000078> 	jalr zero, r1, 0
 
 
-Вывод также можно посмотреть в файле [output.txt](https://github.com/Ma-XD/comp-arch-homework/blob/main/hw4/output.txt)
+#### *Вывод также можно посмотреть в файле [output.txt](https://github.com/Ma-XD/comp-arch-homework/blob/main/hw4/output.txt)*
